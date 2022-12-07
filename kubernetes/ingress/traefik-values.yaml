@@ -1,0 +1,57 @@
+# ---
+additionalArguments:
+#  - --entrypoints.websecure.http.tls.certresolver=cloudflare
+#  - --entrypoints.websecure.http.tls.domains[0].main=reinhardjs.my.id
+#  - --entrypoints.websecure.http.tls.domains[0].sans=*.reinhardjs.my.id
+
+#  - --certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare
+#  - --certificatesresolvers.cloudflare.acme.email=your-email-here@example.com
+#  - --certificatesresolvers.cloudflare.acme.dnschallenge.resolvers=1.1.1.1
+#  - --certificatesresolvers.cloudflare.acme.storage=/certs/acme-cloudflare.json
+
+ports:
+  web:
+    redirectTo: websecure
+  websecure:
+    tls:
+      enabled: true
+#      certResolver: cloudflare
+      store:
+        name: default
+
+env:
+  - name: CF_API_EMAIL
+    valueFrom:
+      secretKeyRef:
+        key: email
+        name: cloudflare-credentials
+  - name: CF_API_KEY
+    valueFrom:
+      secretKeyRef:
+        key: apiKey
+        name: cloudflare-credentials
+
+ingressRoute:
+  dashboard:
+    enabled: false
+
+persistence:
+  enabled: true
+  name: certs
+  path: /certs
+  size: 1Gi
+
+#deployment:
+#  initContainers:
+#    # The "volume-permissions" init container is required if you run into permission issues.
+#    # Related issue: https://github.com/containous/traefik/issues/6972
+#    - name: volume-permissions
+#      image: busybox:1.31.1
+#      command: ["sh", "-c", "chmod -Rv 600 /certs/*"]
+#      volumeMounts:
+#        - name: certs
+#          mountPath: /certs
+
+ingressClass:
+  enabled: true
+  isDefaultClass: true
