@@ -47,8 +47,6 @@ The value of the context argument will be assigned to the context attribute of t
 
 The value of the doc_type argument will be used as the prefix for the id attribute of the Meilisearch `terminologies` document.
 
-![image](https://github.com/user-attachments/assets/41e3dd0a-d8b7-4741-b790-91899488246e)
+![image](https://github.com/user-attachments/assets/e28d4762-5e00-4b0d-890e-2f35b3576796)
 
-![image](https://github.com/user-attachments/assets/f50b2b07-dd26-404e-832d-dc652c10a651)
-
-
+![image](https://github.com/user-attachments/assets/2ba6d9ab-aef7-4d8b-8ecc-e81cf006a263)
