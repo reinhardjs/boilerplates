@@ -1,0 +1,37 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Build directories
+bin/
+obj/
+
+# Dependency directories
+vendor/
+
+# Go test binaries
+*.test
+
+# IDE and editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# dotenv
+.env
+!.env.example
+
+# MacOS
+.DS_Store
+
+# creds
+creds/
+
+# txt files
+*.txt

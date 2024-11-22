@@ -1,0 +1,36 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Unit test / coverage reports
+.coverage
+.coverage.*
+.pytest_cache/
+
+# dotenv
+.env
+!.env.example
+
+# virtualenv
+.venv/
+
+# credentials folder
+creds/
+
+# Large local files
+*.txt
+!requirements.txt
+
+# VS Code
+.vscode/
+
+# MacOS
+.DS_Store
+
+# creds
+creds/
