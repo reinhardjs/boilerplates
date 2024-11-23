@@ -4,8 +4,8 @@ Description=Reverse SSH Tunnel with Auto Reconnect
 After=network.target
 
 [Service]
-User=reinhardjs
-ExecStart=/usr/bin/autossh -M 0 -N -R 2223:localhost:22 reinhardjs@103.193.176.202
+User=reinhard
+ExecStart=/usr/bin/autossh -M 0 -N -R 2223:localhost:2222 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 reinhardjs@103.193.176.202
 Restart=always
 RestartSec=10s
 
