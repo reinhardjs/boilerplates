@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Local Backend Docker Compose",
+            "type": "shell",
+            "command": "docker compose -f ./clinic-os/apps/medusa-backend/docker-compose-local-database.yml up",
+            "problemMatcher": [],
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
+        },
+        {
+            "label": "Run Integration Test Docker Compose",
+            "type": "shell",
+            "command": "docker compose -f ./clinic-os/integration-tests/docker-compose.yaml up",
+            "problemMatcher": [],
+            "runOptions": {
+                // "runOn": "folderOpen"
+            }
+        },
+        {
+            "label": "Run Meilisearch with Reverse Tunnel",
+            "type": "shell",
+            "command": "./meilisearch --master-key=master-key",
+            "problemMatcher": [],
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
+        }
+    ]
+}
