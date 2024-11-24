@@ -11,6 +11,7 @@ ExecStart=/usr/bin/autossh -M 0 -N \
     -R 7700:localhost:7700 \
     -o ServerAliveInterval=60 \
     -o ServerAliveCountMax=3 \
+    -o ExitOnForwardFailure=no \
     reinhardjs@103.193.176.202
 Restart=always
 RestartSec=10s
