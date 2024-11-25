@@ -1,5 +1,20 @@
 ```
 [Unit]
+Description=Meilisearch
+After=network.target
+
+[Service]
+EnvironmentFile=/mnt/data/shared/envs/meilisearch/.env
+ExecStart=/mnt/data/shared/meilisearch --db-path=/mnt/data/shared/db/data.meilisearch
+User=root
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```
+[Unit]
 Description=Reverse SSH Tunnel with Auto Reconnect
 After=network.target
 
