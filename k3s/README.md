@@ -9,3 +9,8 @@ sudo systemctl status k3s
 sudo journalctl -u k3s
 
 sudo systemctl restart k3s-agent
+
+
+### Get server token
+
+cat /var/lib/rancher/k3s/server/node-token
