@@ -6,7 +6,10 @@ sudo systemctl restart k3s
 
 sudo systemctl status k3s
 
-sudo journalctl -u k3s
+## Monitor k3s server and agent
+sudo journalctl -u k3s -f
+
+sudo journalctl -u k3s-agent -f
 
 sudo systemctl restart k3s-agent
 
