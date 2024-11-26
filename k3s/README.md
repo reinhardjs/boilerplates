@@ -1,6 +1,6 @@
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server" sh -s - --token 123456
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --docker --token 123456" sh -s -
 
-curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent" sh -s - --server https://103.193.176.202:6443 --token 123456
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent --server https://103.193.176.202:6443 --docker --token 123456" sh -s -
 
 sudo systemctl restart k3s
 
