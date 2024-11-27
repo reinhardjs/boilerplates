@@ -63,3 +63,16 @@ sudo docker tag localhost:5000/my-web:latest my-web:latest
 
 sudo docker rmi localhost:5000/my-web:latest
 ```
+
+## How to see registry resources
+
+```
+# List all repositories
+curl -X GET http://localhost:5000/v2/_catalog
+
+# List tags for specific image
+curl -X GET http://localhost:5000/v2/my-web-api/tags/list
+
+# Pretty print JSON output
+curl -s http://localhost:5000/v2/_catalog | jq '.'
+```
