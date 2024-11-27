@@ -60,4 +60,6 @@ docker push localhost:5000/my-web
 sudo docker pull localhost:5000/my-web:latest
 
 sudo docker tag localhost:5000/my-web:latest my-web:latest
+
+sudo docker rmi localhost:5000/my-web:latest
 ```
