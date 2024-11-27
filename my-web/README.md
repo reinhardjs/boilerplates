@@ -25,7 +25,7 @@ using local registry:
 sudo docker run -d \
   -p 5000:5000 \
   --name registry \
-  -v /mnt/data/registry/data:/var/lib/registry \
-  -e REGISTRY_HTTP_SECRET=secret-key \ 
   --restart unless-stopped \
+  -e REGISTRY_HTTP_SECRET=secret-key \
+  -v /mnt/data/registry/data:/var/lib/registry \
   registry:2.7
