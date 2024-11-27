@@ -53,3 +53,11 @@ docker tag my-web localhost:5000/my-web
 # Then push to local registry
 docker push localhost:5000/my-web
 ```
+
+## how to pull from local registry
+
+```
+sudo docker pull localhost:5000/my-web:latest
+
+sudo docker tag localhost:5000/my-web:latest my-web:latest
+```
