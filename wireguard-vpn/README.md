@@ -103,19 +103,6 @@ You will need to generate a public/private key pair for both devices.
     sudo ufw allow 51820/udp
     ```
 
-    If you're using `iptables`, you can use something like this:
-    ```
-    sudo iptables -A INPUT -p udp --dport 51820 -j ACCEPT
-    sudo iptables -A FORWARD -i wg0 -j ACCEPT
-    sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE  # Adjust `eth0` if needed, sometime it's ens3
-    ```
-
-    To make the IP tables changes permanent, you can use `iptables-persistent`:
-    ```
-    sudo apt install iptables-persistent
-    sudo netfilter-persistent save
-    ```
-
     To check what network interface you're using, run:
     ```
     ip route
@@ -125,6 +112,74 @@ You will need to generate a public/private key pair for both devices.
     default via 10.26.10.1 dev ens3 proto dhcp src 10.26.10.107 metric 100 
     1.1.1.1 via 10.26.10.1 dev ens3 proto dhcp src 10.26.10.107 metric 100 
     10.0.0.0/24 dev wg0 proto kernel scope link src 10.0.0.1 
+    ```
+
+    And then execute these commands:
+    ```
+    sudo iptables -A INPUT -p udp --dport 51820 -j ACCEPT
+    sudo iptables -A FORWARD -i wg0 -j ACCEPT
+    sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE  # Adjust eth0 if necessary, sometime it's ens3
+    ```
+
+    To make the IP tables changes permanent, you can follow these steps:
+
+    **Create a Script to Apply the Rules**
+
+    ```
+    sudo nano /usr/local/bin/apply-iptables.sh
+    ```
+
+    Add the following content to the script:
+    ```
+    #!/bin/bash
+    iptables -A INPUT -p udp --dport 51820 -j ACCEPT
+    iptables -A FORWARD -i wg0 -j ACCEPT
+    iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE  # Adjust eth0 if necessary, sometime it's ens3
+    ```
+
+    Make the script executable:
+    ```
+    sudo chmod +x /usr/local/bin/apply-iptables.sh
+    ```
+
+    Create a systemd service to run the script at boot:
+    ```
+    sudo nano /etc/systemd/system/apply-iptables.service
+    ```
+
+    Add the following content to the service file:
+    ```
+    [Unit]
+    Description=Apply custom iptables rules for WireGuard
+    After=network.target
+
+    [Service]
+    Type=oneshot
+    ExecStart=/usr/local/bin/apply-iptables.sh
+    RemainAfterExit=true
+
+    [Install]
+    WantedBy=multi-user.target
+    ```
+
+    Reload the systemd daemon to recognize the new service:
+    ```
+    sudo systemctl daemon-reload
+    ```
+
+    Enable the service to run at boot:
+    ```
+    sudo systemctl enable apply-iptables
+    ```
+
+    Start the service immediately:
+    ```
+    sudo systemctl start apply-iptables
+    ```
+
+    Verify the service is running:
+    ```
+    sudo systemctl status apply-iptables
     ```
 
 ## Step 4: Configure WireGuard on the Home PC
