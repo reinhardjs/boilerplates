@@ -110,6 +110,12 @@ You will need to generate a public/private key pair for both devices.
     sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE  # Adjust `eth0` if needed, sometime it's ens3
     ```
 
+    To make the IP tables changes permanent, you can use `iptables-persistent`:
+    ```
+    sudo apt install iptables-persistent
+    sudo netfilter-persistent save
+    ```
+
     To check what network interface you're using, run:
     ```
     ip route
