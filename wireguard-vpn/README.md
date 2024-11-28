@@ -118,7 +118,7 @@ You will need to generate a public/private key pair for both devices.
     ```
     sudo iptables -A INPUT -p udp --dport 51820 -j ACCEPT
     sudo iptables -A FORWARD -i wg0 -j ACCEPT
-    sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE  # Adjust eth0 if necessary, sometime it's ens3
+    sudo iptables -t nat -A POSTROUTING -o ens3 -j MASQUERADE  # Adjust ens3 if necessary, in common it's eth0
     ```
 
     To make the IP tables changes permanent, you can follow these steps:
@@ -134,7 +134,7 @@ You will need to generate a public/private key pair for both devices.
     #!/bin/bash
     iptables -A INPUT -p udp --dport 51820 -j ACCEPT
     iptables -A FORWARD -i wg0 -j ACCEPT
-    iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE  # Adjust eth0 if necessary, sometime it's ens3
+    iptables -t nat -A POSTROUTING -o ens3 -j MASQUERADE  # Adjust ens3 if necessary, in common it's eth0
     ```
 
     Make the script executable:
