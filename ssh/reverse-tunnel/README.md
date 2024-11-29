@@ -21,15 +21,21 @@ After=network.target
 [Service]
 User=reinhard
 ExecStart=/usr/bin/autossh -M 0 -N \
-    -R 2222:localhost:2222 \
-    -R 9000:localhost:9000 \
-    -R 7700:localhost:7700 \
-    -o ServerAliveInterval=60 \
-    -o ServerAliveCountMax=3 \
+    -R 2223:localhost:23 \
+    -R 0.0.0.0:5000:localhost:5000 \
+    -o ServerAliveInterval=30 \
+    -o ServerAliveCountMax=120 \
     -o ExitOnForwardFailure=no \
+    -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null \
+    -o TCPKeepAlive=yes \
+    -o ConnectTimeout=15 \
+    -o BatchMode=yes \
     reinhardjs@103.193.176.202
 Restart=always
-RestartSec=10s
+RestartSec=3s
+StartLimitIntervalSec=0
+StartLimitBurst=0
 
 [Install]
 WantedBy=multi-user.target
