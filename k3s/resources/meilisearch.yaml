@@ -1,0 +1,76 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meilisearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meilisearch
+  template:
+    metadata:
+      labels:
+        app: meilisearch
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: worker-node  # Ensure it runs on this specific node
+      containers:
+        - name: meilisearch
+          image: localhost:5000/meilisearch:latest  # Use the public image for Meilisearch
+          # imagePullPolicy: Never  # Tell Kubernetes to use the local image
+          args:
+            - "meilisearch"
+            - "--master-key=your-master-key-here"  # Your master key
+            - "--db-path=/mnt/data.ms"
+          ports:
+            - containerPort: 7700  # The container listens on port 7700
+          volumeMounts:
+            - mountPath: /mnt/data.ms
+              name: meilisearch-storage
+      volumes:
+        - name: meilisearch-storage
+          hostPath:
+            path: /mnt/data/shared/db/data.meilisearch
+            type: Directory
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meilisearch
+  namespace: default
+spec:
+  selector:
+    app: meilisearch  # Match the label of the Deployment
+  ports:
+    - protocol: TCP
+      port: 7700        # Expose service on port 7700
+      targetPort: 7700   # Internal container port where Meilisearch listens
+  type: NodePort   # Exposes the service via a cloud LoadBalancer
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: meilisearch-noscai-ingress
+  namespace: default
+  annotations:
+    traefik.ingress.kubernetes.io/ssl-cert: "noscai-my-id-tls-secret"  # Reference the TLS secret
+    traefik.ingress.kubernetes.io/ssl-redirect: "true"  # Enforce HTTPS
+spec:
+  rules:
+  - host: meilisearch.noscai.my.id  # Domain name to route traffic to
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: meilisearch  # Route traffic to the Meilisearch service
+            port:
+              number: 7700    # Port exposed by the Meilisearch service
+  tls:
+  - hosts:
+    - meilisearch.noscai.my.id  # The domain for SSL
+    secretName: noscai-my-id-tls-secret  # The TLS secret for SSL termination
