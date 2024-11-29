@@ -31,7 +31,7 @@ ExecStart=/usr/bin/autossh -M 0 -N \
     -o TCPKeepAlive=yes \
     -o ConnectTimeout=15 \
     -o BatchMode=yes \
-    reinhardjs@103.193.176.202
+    reinhardjs@10.0.0.1
 Restart=always
 RestartSec=3s
 StartLimitIntervalSec=0
