@@ -5,6 +5,7 @@ metadata:
   name: meilisearch
 spec:
   replicas: 1
+  revisionHistoryLimit: 0  # Set to 0 to keep no old ReplicaSets
   selector:
     matchLabels:
       app: meilisearch
@@ -17,7 +18,7 @@ spec:
         kubernetes.io/hostname: worker-node  # Ensure it runs on this specific node
       containers:
         - name: meilisearch
-          image: localhost:5000/meilisearch:latest  # Use the public image for Meilisearch
+          image: registry.reinhardjs.my.id/meilisearch:latest  # Use the public image for Meilisearch
           # imagePullPolicy: Never  # Tell Kubernetes to use the local image
           args:
             - "meilisearch"

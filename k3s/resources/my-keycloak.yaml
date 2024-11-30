@@ -5,6 +5,7 @@ metadata:
   name: my-keycloak
 spec:
   replicas: 1
+  revisionHistoryLimit: 0  # Set to 0 to keep no old ReplicaSets
   selector:
     matchLabels:
       app: my-keycloak

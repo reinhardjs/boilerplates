@@ -5,6 +5,7 @@ metadata:
   namespace: default  # Adjust namespace if needed
 spec:
   replicas: 1  # Adjust number of replicas as needed
+  revisionHistoryLimit: 0  # Set to 0 to keep no old ReplicaSets
   selector:
     matchLabels:
       app: my-web
@@ -17,8 +18,8 @@ spec:
         kubernetes.io/hostname: master-node  # Specify your node name here
       containers:
       - name: my-web
-        image: localhost:5000/my-web:latest  # Replace with your Docker image tag (e.g., my-web:v1.0)
-        imagePullPolicy: Never  # Tell Kubernetes to use the local image
+        image: registry.reinhardjs.my.id/my-web:latest  # Replace with your Docker image tag (e.g., my-web:v1.0)
+        # imagePullPolicy: Never  # Tell Kubernetes to use the local image
         ports:
         - containerPort: 3000  # Port where your app listens in the container
 
