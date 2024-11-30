@@ -1,0 +1,79 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-keycloak
+  template:
+    metadata:
+      labels:
+        app: my-keycloak
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: worker-node  # Ensure it runs on the worker node
+      containers:
+        - name: my-keycloak
+          image: quay.io/keycloak/keycloak:23.0.6
+          args: ["start-dev"]
+          env:
+            - name: KEYCLOAK_ADMIN
+              value: "admin"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: "your-password-here"
+            - name: KC_PROXY
+              value: "edge"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - mountPath: /opt/jboss/keycloak/standalone/data
+              name: my-keycloak-data
+      volumes:
+        - name: my-keycloak-data
+          hostPath:
+            path: /mnt/data/keycloaks/my
+            type: Directory
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-keycloak
+  namespace: default
+spec:
+  selector:
+    app: my-keycloak
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: NodePort
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-keycloak-ingress
+  namespace: default
+  annotations:
+    traefik.ingress.kubernetes.io/ssl-cert: "reinhardjs-my-id-tls-secret" # Reference the secret
+    traefik.ingress.kubernetes.io/ssl-redirect: "true" # Enforce HTTPS
+spec:
+  rules:
+  - host: keycloak.reinhardjs.my.id
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-keycloak
+            port:
+              number: 8080
+  tls:
+  - hosts:
+    - keycloak.reinhardjs.my.id
+    secretName: reinhardjs-my-id-tls-secret
