@@ -14,6 +14,7 @@ spec:
       labels:
         app: my-web-api
     spec:
+      restartPolicy: Always  # Ensure the container always restarts, even on image pull backoff
       nodeSelector:
         kubernetes.io/hostname: master-node  # Specify your node name here
       imagePullSecrets:
@@ -21,7 +22,7 @@ spec:
       containers:
       - name: my-web-api
         image: registry.reinhardjs.my.id/my-web-api:latest
-        # imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
 
