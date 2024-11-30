@@ -28,7 +28,7 @@ spec:
             - name: KC_DB
               value: "postgres"
             - name: KC_DB_URL
-              value: "jdbc:postgresql://keycloak-postgres:5432/keycloak"
+              value: "jdbc:postgresql://my-keycloak-postgres:5432/keycloak"
             - name: KC_DB_USERNAME
               value: "keycloak"
             - name: KC_DB_PASSWORD
@@ -60,6 +60,15 @@ spec:
               name: http
             - containerPort: 8443
               name: https
+      # Add a dependency on the my-keycloak-postgres deployment
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: my-keycloak-postgres
+              topologyKey: "kubernetes.io/hostname"
+      restartPolicy: Always  # Ensure the container always restarts on failure
 
 ---
 apiVersion: v1
