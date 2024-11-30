@@ -53,7 +53,7 @@ spec:
             type: Directory
         - name: certificates
           hostPath:
-            path: /mnt/data/shared/k3s/certs
+            path: /mnt/data/shared/creds/certs
             type: Directory
 
 ---
