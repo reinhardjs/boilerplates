@@ -1,0 +1,97 @@
+# Reference: 
+# - https://medium.com/@wilson.wilson/manage-docker-registry-auth-with-keycloak-e0b4356cf7d0
+# - https://github.com/keycloak/keycloak/issues/29132
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-registry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-registry
+  template:
+    metadata:
+      labels:
+        app: my-registry
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: worker-node
+      containers:
+        - name: my-registry
+          image: registry:2.7
+          env:
+            - name: REGISTRY_AUTH
+              value: "token"
+            - name: REGISTRY_AUTH_TOKEN_REALM
+              value: "https://keycloak.reinhardjs.my.id/realms/docker-registry/protocol/docker-v2/auth"
+            - name: REGISTRY_AUTH_TOKEN_SERVICE
+              value: "docker-registry"
+            - name: REGISTRY_AUTH_TOKEN_ISSUER
+              value: "https://keycloak.reinhardjs.my.id/realms/docker-registry"
+            - name: REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE
+              value: "/opt/certs/docker-registry.crt"
+            - name: REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY
+              value: "/var/lib/registry"
+            - name: DOCKER_CONTENT_TRUST
+              value: "1"
+          ports:
+            - containerPort: 5000
+          volumeMounts:
+            - mountPath: /var/lib/registry
+              name: my-registry-storage
+            - mountPath: /opt/certs
+              name: certificates
+              readOnly: true
+      volumes:
+        - name: my-registry-storage
+          hostPath:
+            path: /mnt/data/registries/my
+            type: Directory
+        - name: certificates
+          hostPath:
+            path: /mnt/data/shared/k3s/certs
+            type: Directory
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-registry
+  namespace: default
+spec:
+  selector:
+    app: my-registry
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: NodePort
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-registry-ingress
+  namespace: default
+  annotations:
+    traefik.ingress.kubernetes.io/ssl-cert: "reinhardjs-my-id-tls-secret"
+    traefik.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  rules:
+  - host: registry.reinhardjs.my.id
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-registry
+            port:
+              number: 5000
+  tls:
+  - hosts:
+    - registry.reinhardjs.my.id
+    secretName: reinhardjs-my-id-tls-secret
