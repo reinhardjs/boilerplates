@@ -16,9 +16,11 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: worker-node  # Ensure it runs on this specific node
+      imagePullSecrets:
+      - name: my-regcred  # Reference to the secret containing Docker credentials
       containers:
         - name: meilisearch
-          image: registry.reinhardjs.my.id/meilisearch:latest  # Use the public image for Meilisearch
+          image: registry.reinhardjs.my.id/meilisearch:v1.11  # Use the public image for Meilisearch
           # imagePullPolicy: Never  # Tell Kubernetes to use the local image
           args:
             - "meilisearch"

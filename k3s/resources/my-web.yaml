@@ -16,6 +16,8 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: master-node  # Specify your node name here
+      imagePullSecrets:
+      - name: my-regcred  # Reference to the secret containing Docker credentials
       containers:
       - name: my-web
         image: registry.reinhardjs.my.id/my-web:latest  # Replace with your Docker image tag (e.g., my-web:v1.0)
