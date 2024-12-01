@@ -55,6 +55,9 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server \
 # Allow K3s API Serve
 sudo ufw allow 6443/tcp
 
+# Allow K3s Alternative: CA certs: Get CA certificates from the K3s server.
+sudo ufw allow 6444
+
 # Allow Flannel VXLAN
 sudo ufw allow 8472/udp
 
