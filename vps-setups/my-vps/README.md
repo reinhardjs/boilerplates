@@ -3,6 +3,8 @@
 ## 1. Install docker and docker compose.
 https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-22-04
 
+<br>
+
 ## 2. Install UFW (Uncomplicated Firewall).
 https://www.digitalocean.com/community/tutorials/how-to-set-up-a-firewall-with-ufw-on-ubuntu
 https://www.digitalocean.com/community/tutorials/ufw-essentials-common-firewall-rules-and-commands
@@ -32,8 +34,12 @@ For example, to allow X11 connections, which use ports 6000-6007, use these comm
     sudo ufw allow 6000:6007/udp
 ```
 
+<br>
+
 ## 3.Install Wireguard
 https://github.com/reinhardjs/boilerplates/tree/main/wireguard-vpn
+
+<br>
 
 ## 4. Install k3s server
 https://github.com/reinhardjs/boilerplates/tree/main/k3s
@@ -77,3 +83,25 @@ Copy the content and dont forget to change the https://0.0.0.0:6443 to https://<
 Then on the client machine, copy the content to ~/.kube/config
 
 Once the 4 steps are completed, the memory usage typically increases by approximately 528MB, primarily due to the k3s server and Docker.
+
+<br>
+
+## 5. Setup reverse ssh tunnel
+https://github.com/reinhardjs/boilerplates/tree/main/ssh/reverse-tunnel
+
+<br>
+
+## 6. Setup k3s traefik ssl secrets
+Setup for k3s traefik ingress controler of reinhardjs.my.id. Go to cloudflare and get the ssl certificate and key. 
+To get the certificate and key, go to the SSL/TLS settings of the domain -> origin server then create certificate.
+Save it on to the .crt and .key file. Then put it in the secret manager. Look at the detail on this github on how to put it as secret k3s.
+https://github.com/reinhardjs/boilerplates/tree/main/k3s/traefik
+
+Execute the command below to create the secret.
+```bash
+kubectl create secret tls traefik-cert --cert=./traefik.crt --key=./traefik.key
+```
+
+```bash
+kubectl create secret tls reinhardjs-my-id-tls-secret --cert=/etc/ssl/reinhardjs.my.id.crt --key=/etc/ssl/reinhardjs.my.id.key
+```
