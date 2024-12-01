@@ -1,16 +1,25 @@
+# Reverse SSH Tunnel with Auto Reconnect
+
+This guide explains how to set up a reverse SSH tunnel that automatically reconnects if the connection drops.
+
+## Setup on server
+
 ```
-[Unit]
-Description=Meilisearch
-After=network.target
+  sudo nano /etc/ssh/sshd_config    
+```
 
-[Service]
-EnvironmentFile=/mnt/data/shared/envs/meilisearch/.env
-ExecStart=/mnt/data/shared/meilisearch --db-path=/mnt/data/shared/db/data.meilisearch
-User=root
-Restart=always
+Ensure the following lines are present and uncommented:
 
-[Install]
-WantedBy=multi-user.target
+```
+AllowTcpForwarding yes   # Allows TCP forwarding, which is necessary for SSH tunneling.
+GatewayPorts yes         # Allows remote hosts to connect to ports forwarded for the client.
+TCPKeepAlive yes         # Enables TCP keepalive messages to ensure the connection stays active.
+```
+
+## Setup on client
+
+```bash
+sudo nano /etc/systemd/system/autossh-tunnel.service
 ```
 
 ```
@@ -41,9 +50,7 @@ StartLimitBurst=0
 WantedBy=multi-user.target
 ```
 
-```
-sudo nano /etc/systemd/system/autossh-tunnel.service
-
+```bash
 sudo systemctl daemon-reload
 
 sudo systemctl enable autossh-tunnel.service
