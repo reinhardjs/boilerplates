@@ -3,6 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: my-keycloak-postgres
+  namespace: my
 spec:
   replicas: 1
   revisionHistoryLimit: 0  # Set to 0 to keep no old ReplicaSets
@@ -23,7 +24,10 @@ spec:
         - name: POSTGRES_USER
           value: keycloak
         - name: POSTGRES_PASSWORD
-          value: password
+          valueFrom:
+            secretKeyRef:
+              name: my-keycloak-postgres-password-secret
+              key: password
         ports:
         - containerPort: 5432
         volumeMounts:
@@ -40,6 +44,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: my-keycloak-postgres
+  namespace: my
 spec:
   selector:
     app: my-keycloak-postgres
