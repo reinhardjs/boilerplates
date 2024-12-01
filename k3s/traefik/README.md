@@ -3,7 +3,7 @@
 First, create a secret for the SSL certificate and key:
 
 ```bash
-sudo kubectl create secret tls reinhardjs-my-id-tls-secret --cert=/etc/ssl/reinhardjs.my.id.pem --key=/etc/ssl/reinhardjs.my.id.key
+sudo kubectl create secret tls reinhardjs-my-id-tls-secret --cert=/etc/ssl/reinhardjs.my.id.crt --key=/etc/ssl/reinhardjs.my.id.key
 ```
 
 Then setup an ingress route for the domain name:
