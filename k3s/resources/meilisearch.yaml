@@ -30,7 +30,7 @@ spec:
           ports:
             - containerPort: 7700  # The container listens on port 7700
           env:
-            - name: MEILISEARCH_MASTER_KEY
+            - name: MEILI_MASTER_KEY
               valueFrom:
                 secretKeyRef:
                   name: my-meilisearch-master-key-secret
