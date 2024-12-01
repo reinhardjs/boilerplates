@@ -31,20 +31,26 @@ spec:
             - name: KC_DB_URL
               value: "jdbc:postgresql://my-keycloak-postgres:5432/keycloak"
             - name: KC_DB_USERNAME
-              value: "keycloak"
+              valueFrom:
+                secretKeyRef:
+                  name: my-keycloak-postgres
+                  key: pg_user
             - name: KC_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: my-keycloak-postgres-password-secret
-                  key: password
+                  name: my-keycloak-postgres
+                  key: pg_password
             - name: KC_HOSTNAME
               value: "keycloak.reinhardjs.my.id"
             - name: KEYCLOAK_ADMIN
-              value: "admin"
+              valueFrom:
+                secretKeyRef:
+                  name: my-keycloak
+                  key: admin
             - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: my-keycloak-admin-password-secret
+                  name: my-keycloak
                   key: password
             - name: KC_PROXY
               value: "edge"
@@ -67,6 +73,13 @@ spec:
               name: http
             - containerPort: 8443
               name: https
+          volumeMounts:
+            - mountPath: /opt/jboss/keycloak/standalone/data
+              name: keycloak-data
+      volumes:
+        - name: keycloak-data
+          persistentVolumeClaim:
+            claimName: my-keycloak-pvc
       # Add a dependency on the my-keycloak-postgres deployment
       affinity:
         podAffinity:
@@ -76,6 +89,7 @@ spec:
                   app: my-keycloak-postgres
               topologyKey: "kubernetes.io/hostname"
       restartPolicy: Always  # Ensure the container always restarts on failure
+
 
 ---
 apiVersion: v1

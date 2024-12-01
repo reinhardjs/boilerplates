@@ -15,6 +15,8 @@ spec:
       labels:
         app: my-keycloak-postgres
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: worker-node
       containers:
       - name: postgres
         image: postgres:13
@@ -22,12 +24,15 @@ spec:
         - name: POSTGRES_DB
           value: keycloak
         - name: POSTGRES_USER
-          value: keycloak
+          valueFrom:
+            secretKeyRef:
+              name: my-keycloak-postgres
+              key: pg_user
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: my-keycloak-postgres-password-secret
-              key: password
+              name: my-keycloak-postgres
+              key: pg_password
         ports:
         - containerPort: 5432
         volumeMounts:
@@ -35,9 +40,8 @@ spec:
           name: postgres-data
       volumes:
       - name: postgres-data
-        hostPath:
-          path: /mnt/mydata/keycloaks/my/keycloak-postgres
-          type: Directory
+        persistentVolumeClaim:
+          claimName: my-keycloak-postgres-pvc
 
 ---
 apiVersion: v1
@@ -51,3 +55,5 @@ spec:
   ports:
   - port: 5432
     targetPort: 5432
+    protocol: TCP
+  type: ClusterIP

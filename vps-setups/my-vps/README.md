@@ -105,3 +105,35 @@ kubectl create secret tls traefik-cert --cert=./traefik.crt --key=./traefik.key
 ```bash
 kubectl create secret tls reinhardjs-my-id-tls-secret --cert=/etc/ssl/reinhardjs.my.id.crt --key=/etc/ssl/reinhardjs.my.id.key
 ```
+
+## Edit local-path-provisioner configmap default path to the desired path (Optional)
+
+```bash
+kubectl edit configmap local-path-config -n kube-system
+```
+
+the file will look like this.
+```yaml
+     apiVersion: v1
+     kind: ConfigMap
+     metadata:
+       name: local-path-config
+       namespace: kube-system
+     data:
+       config.json: |
+         {
+           "nodePathMap": [
+             {
+               "node": "DEFAULT_PATH_FOR_NON_LISTED_NODES",
+               "paths": ["/var/lib/rancher/k3s/storage"]
+             }
+           ]
+         }
+```
+
+Press i to edit the file, then modify the paths to the desired path. Press esc then type :wq to save the file.
+
+```bash
+kubectl rollout restart deployment local-path-provisioner -n kube-system
+```
+
