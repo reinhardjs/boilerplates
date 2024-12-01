@@ -68,4 +68,12 @@ sudo ufw allow 30000:32767/tcp
 sudo ufw allow 10250/tcp
 ```
 
+```bash
+cat /etc/rancher/k3s/k3s.yaml
+```
+
+Copy the content and dont forget to change the https://0.0.0.0:6443 to https://<SERVER_PUBLIC_IP>:6443
+
+Then on the client machine, copy the content to ~/.kube/config
+
 Once the 4 steps are completed, the memory usage typically increases by approximately 528MB, primarily due to the k3s server and Docker.
