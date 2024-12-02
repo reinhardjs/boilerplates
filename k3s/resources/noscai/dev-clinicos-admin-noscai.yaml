@@ -1,0 +1,53 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dev-clinicos-admin
+  namespace: noscai
+  annotations:
+    traefik.ingress.kubernetes.io/ssl-cert: "noscai-my-id-tls-secret" # Reference the secret
+    traefik.ingress.kubernetes.io/ssl-redirect: "true" # Enforce HTTPS
+spec:
+  rules:
+  - host: dev-clinicos-admin.noscai.my.id
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: dev-clinicos-admin
+            port:
+              number: 7001
+  tls:
+  - hosts:
+    - dev-clinicos-admin.noscai.my.id
+    secretName: noscai-my-id-tls-secret
+
+
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: dev-clinicos-admin
+  namespace: noscai
+subsets:
+  - addresses:
+      - ip: 10.0.0.2
+    ports:
+      - port: 7001
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dev-clinicos-admin
+  namespace: noscai  # Adjust namespace if needed
+spec:
+  type: ClusterIP
+  selector:
+    app: dev-clinicos-admin
+  ports:
+    - port: 7001
+      targetPort: 7001
