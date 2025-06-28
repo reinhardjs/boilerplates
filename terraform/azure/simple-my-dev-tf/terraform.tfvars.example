@@ -1,0 +1,43 @@
+# Azure Infrastructure Configuration
+# Copy this file to terraform.tfvars and modify the values as needed
+
+location    = "Central US"
+environment = "dev"
+project_name = "my"
+
+# PostgreSQL Configuration
+postgres_admin_username = "adminuser"
+postgres_admin_password = "YourSecurePassword123!"  # Set a strong password
+
+# Container App Configuration
+container_app_cpu           = "0.25"
+container_app_memory        = "0.5Gi"
+container_app_min_replicas  = 1
+container_app_max_replicas  = 3
+
+# PostgreSQL Server Configuration
+postgres_sku_name    = "B_Standard_B1ms"
+postgres_storage_mb  = 32768
+postgres_version     = "14"
+
+# Storage Account Configuration
+storage_account_tier                        = "Standard"
+storage_account_replication_type           = "LRS"
+storage_account_access_tier                = "Hot"
+storage_allow_public_access                = false
+storage_blob_versioning_enabled            = true
+storage_blob_change_feed_enabled           = true
+storage_blob_change_feed_retention_days    = 30
+storage_blob_last_access_time_enabled      = true
+storage_blob_container_delete_retention_days = 7
+storage_blob_delete_retention_days         = 30
+storage_container_access_type              = "private"
+storage_file_share_quota_gb                = 100
+
+# Resource Tags
+tags = {
+  Project     = "my"
+  Environment = "dev"
+  ManagedBy   = "terraform"
+  CreatedBy   = "automation"
+}
