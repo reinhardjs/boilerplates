@@ -1,0 +1,37 @@
+# Basic Configuration
+project_name = "fivem-server"
+environment  = "dev"
+location     = "Indonesia Central"
+
+# VM Configuration
+admin_username = "azureuser"
+# RSA: ssh-keygen -t rsa -b 4096 -C "your-email@example.com"
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC7..."  # Replace with your actual public key
+vm_size        = "Standard_B1s"  # 1 vCPU, 1GB RAM - minimal cost (~$7-10/month)
+# vm_size      = "Standard_B1ms" # 1 vCPU, 2GB RAM - slightly better (~$15/month)
+# vm_size      = "Standard_B2s"  # 2 vCPUs, 4GB RAM - better performance (~$30/month)
+
+# Storage Configuration
+storage_account_tier             = "Standard"
+storage_account_replication_type = "LRS"
+
+# FiveM Storage Quotas (in GB) - Minimal for cost optimization
+fivem_storage_quota_gb   = 20   # FiveM binaries and basic data
+fivem_resources_quota_gb = 30   # Custom resources (can increase later)
+fivem_cache_quota_gb     = 10   # Cache files
+
+# OS Disk - Use Standard for cost savings
+os_disk_type    = "Standard_LRS"  # Use Standard_LRS for minimal cost
+os_disk_size_gb = 30
+
+# FiveM Download URL (latest stable build)
+fivem_download_url = "https://runtime.fivem.net/artifacts/fivem/build_proot_linux/master/16501-39ee6b6a1ddc38e57d12e5bf4766a7e3cc5830b8/fx.tar.xz"
+
+# Tags
+tags = {
+  Project     = "FiveM"
+  Environment = "dev"
+  ManagedBy   = "terraform"
+  Purpose     = "gaming-server"
+  Owner       = "your-name"
+}
