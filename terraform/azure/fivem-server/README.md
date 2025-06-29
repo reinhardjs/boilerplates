@@ -1,6 +1,34 @@
-# FiveM Server on Azure VM with Storage Account (Cost-Optimized)
+# FiveM Server on Azure VM with Storage Account (Optimized for txData)
 
-This Terraform configuration deploys a **minimal-cost** FiveM server on an Ubuntu virtual machine in Azure with Azure File Shares for persistent storage. **Total monthly cost: ~$5-10**.
+## 🎮 **Cost-Optimized FiveM Server with Correct txData Structure**
+
+This setup creates a FiveM server that properly handles the `txData/qbox_core/cache` and `txData/qbox_core/resources` structure while keeping costs minimal (~$9-11/month).
+
+## **Architecture Overview**
+
+```
+Local VM (fast execution):
+/opt/fivem/
+├── alpine/                    # FiveM runtime environment
+├── run.sh                     # Original FiveM startup script  
+└── txData/
+    └── qbox_core/
+        ├── cache/      -> /mnt/fivem-cache/qbox_core (symlink)
+        └── resources/  -> /mnt/fivem-resources/qbox_core (symlink)
+
+Azure Storage (persistent):
+/mnt/fivem-server/            # General data and logs
+/mnt/fivem-cache/qbox_core/   # Cache files (persisted)
+/mnt/fivem-resources/qbox_core/ # Resources and maps (persisted)
+```
+
+## **How It Works**
+
+1. **FiveM binaries** stay on local VM storage (supports symlinks, fast execution)
+2. **txData structure** is created automatically when FiveM runs
+3. **Symlinks redirect** `cache` and `resources` to Azure File Shares
+4. **Data persists** even if VM is destroyed and recreated
+5. **Costs stay low** with minimal local storage and optimized Azure storage
 
 ## Prerequisites
 
@@ -19,59 +47,27 @@ cat ~/.ssh/id_rsa.pub
 ## Key Features
 
 - **Ultra-minimal VM** (Standard_B1s: 1 vCPU, 1GB RAM) for lowest cost
-- **Azure File Shares** for persistent storage (only 60GB total default)
-- **Only run.sh stored locally** - everything else on Azure Storage
+- **Proper txData structure** with symlinks to Azure Storage
+- **Uses original run.sh** - no custom FiveM configuration needed
 - **Auto-starts on boot** and runs in background
 - **Auto-shutdown scheduling** to reduce costs further
-- **No server.cfg setup** - you provide your own configuration
+- **Symlink support** for FiveM's file structure requirements
 
-## Cost Breakdown (~$5-10/month)
+## Quick Deploy
 
-- **VM (Standard_B1s)**: ~$7-8/month
-- **Storage (60GB)**: ~$1-2/month  
-- **Networking**: ~$1/month
-- **Total**: ~$9-11/month
+```bash
+# 1. Navigate to directory
+cd terraform/azure/fivem-server
 
-## Storage Architecture
+# 2. Copy and edit configuration
+cp terraform.tfvars.example terraform.tfvars
+nano terraform.tfvars  # Add your SSH public key
 
-Everything except `run.sh` is stored on Azure File Shares:
-- **fivem-server** (30GB): FiveM binaries, your server.cfg, logs
-- **fivem-resources** (20GB): Custom resources, maps, scripts  
-- **fivem-cache** (10GB): Cache files for performance
-
-Benefits:
-- **Persistent** - survives VM restarts/recreations
-- **Scalable** - increase quotas as needed
-- **VM-independent** - can move to different/larger VMs later
-
-## Quick Start
-
-1. **Clone and navigate to the directory:**
-   ```bash
-   cd terraform/azure/fivem-server
-   ```
-
-2. **Copy and edit the variables file:**
-   ```bash
-   cp terraform.tfvars.example terraform.tfvars
-   nano terraform.tfvars
-   ```
-
-3. **Required configuration:**
-   - Set your SSH public key in `ssh_public_key`
-   - Optionally adjust VM size, storage quotas, and other settings
-
-4. **Initialize and deploy:**
-   ```bash
-   terraform init
-   terraform plan
-   terraform apply
-   ```
-
-5. **Get connection info:**
-   ```bash
-   terraform output
-   ```
+# 3. Deploy
+terraform init
+terraform plan
+terraform apply
+```
 
 ## After Deployment
 
@@ -80,37 +76,43 @@ Benefits:
    ```bash
    ssh azureuser@<vm-ip>
    ```
-3. **Server auto-starts** - FiveM runs automatically on boot
-4. **Connect via FiveM** to `<vm-ip>:30120`
+3. **Start FiveM for the first time**:
+   ```bash
+   ./start-fivem.sh
+   ```
+4. **Check if it's working**:
+   ```bash
+   ./logs-fivem.sh
+   ./status-fivem.sh
+   ```
+5. **Connect via FiveM** to `<vm-ip>:30120`
 
-## File Structure
+## File Structure Details
 
-```
-VM (only run.sh):
-/home/azureuser/run.sh          # Only local file
+### What gets created automatically:
 
-Azure Storage (everything else):
-/mnt/fivem-server/              # FiveM binaries & your config
-├── FXServer                    # Main executable
-├── fivem.log                   # Server logs
-├── fivem.pid                   # Process ID file
-└── [other FiveM files]
+When FiveM runs for the first time with `./run.sh`, it creates:
+- `txData/qbox_core/cache/` (redirected to Azure Storage)
+- `txData/qbox_core/resources/` (redirected to Azure Storage)
 
-/mnt/fivem-resources/           # Your custom content
-└── [your resources]
+### Storage mapping:
 
-/mnt/fivem-cache/               # Cache files
-└── [cache data]
-```
+| FiveM Path | Actual Location | Purpose |
+|------------|-----------------|---------|
+| `/opt/fivem/alpine/` | Local VM | Runtime (needs symlinks) |
+| `/opt/fivem/run.sh` | Local VM | Startup script |
+| `/opt/fivem/txData/qbox_core/cache/` | `/mnt/fivem-cache/qbox_core/` | Cache files |
+| `/opt/fivem/txData/qbox_core/resources/` | `/mnt/fivem-resources/qbox_core/` | Server resources |
 
 ## Server Management
 
 Helper scripts in the home directory:
 
-- `./start-fivem.sh` - Start FiveM server
+- `./start-fivem.sh` - Start FiveM server (uses original run.sh)
 - `./stop-fivem.sh` - Stop FiveM server  
 - `./restart-fivem.sh` - Restart FiveM server
-- `./fivem-logs.sh` - View live server logs
+- `./logs-fivem.sh` - View live server logs
+- `./status-fivem.sh` - Check detailed status
 
 ### Manual commands:
 ```bash
@@ -127,61 +129,43 @@ tail -f /mnt/fivem-server/fivem.log  # Logs
 ./scripts/manage.sh ssh        # SSH to server
 ```
 
-## Configuration
+## Adding Resources
 
-### VM Sizing for Cost Optimization
+1. **Upload to Azure Storage**:
+   ```bash
+   # From VM
+   cp your-resource/ /mnt/fivem-resources/qbox_core/
+   
+   # Or upload via Azure portal to the fivem-resources file share
+   ```
 
-| VM Size | vCPUs | RAM | Players | Monthly Cost | Recommendation |
-|---------|-------|-----|---------|--------------|----------------|
-| **Standard_B1s** | 1 | 1GB | 8-16 | **~$7-8** | **Minimal cost** |
-| Standard_B1ms | 1 | 2GB | 16-24 | ~$15 | Budget option |
-| Standard_B2s | 2 | 4GB | 24-32 | ~$30 | Better performance |
+2. **Restart server**:
+   ```bash
+   ./restart-fivem.sh
+   ```
 
-**Default**: Standard_B1s for absolute minimal cost
+3. **Resources appear** in FiveM as `txData/qbox_core/resources/your-resource/`
 
-### Storage Quotas (Minimal for Cost)
+## Cost Breakdown
 
-Default quotas are optimized for minimal cost:
-- **fivem-server**: 30GB (FiveM binaries, configs, logs)
-- **fivem-resources**: 20GB (your custom content)
-- **fivem-cache**: 10GB (cache files)
+- **VM (Standard_B1s)**: ~$7.30/month
+- **Storage (60GB total)**: ~$1.50/month  
+- **Network (Public IP + data)**: ~$1.00/month
+- **Total**: **~$9-11/month**
 
-**Total**: 60GB = ~$1-2/month
-
-To increase later: Azure Portal → Storage Account → File shares → Increase quota
-
-## Networking
-
-- **SSH (22)**: Restricted to your IP for management
-- **FiveM (30120 UDP/TCP)**: Open to all for game connections
-- **Private subnet**: VM is in a private subnet with public IP for access
-
-## Security Considerations
-
-1. **SSH Key Authentication**: Password authentication is disabled
-2. **Network Security Groups**: Only necessary ports are open
-3. **Private Storage**: Storage account keys are managed securely
-4. **Regular Updates**: VM is configured for automatic security updates
-
-## Backup Strategy
-
-### Storage Account Backup
-1. Enable Azure Backup for the storage account
-2. Configure backup policies for file shares
-3. Set retention periods based on your needs
-
-### VM Backup
-1. Enable Azure Backup for the VM
-2. Schedule regular snapshots
-3. Test restore procedures
+### Cost reduction features:
+- Auto-shutdown at 2 AM UTC (configurable)
+- Deallocate when not gaming → pay only ~$2/month for storage
+- Burstable CPU performance for gaming workloads
 
 ## Monitoring
 
 View real-time server performance:
 ```bash
 htop                    # System resource usage
-./fivem-logs.sh        # Server logs
+./logs-fivem.sh        # Server logs
 sudo systemctl status fivem  # Service status
+./status-fivem.sh      # Detailed FiveM status
 ```
 
 ## Troubleshooting
@@ -189,27 +173,63 @@ sudo systemctl status fivem  # Service status
 ### Common Issues
 
 1. **Server won't start**:
-   ```bash
-   sudo journalctl -u fivem -n 50  # Check recent logs
-   ```
+    ```bash
+    # Check logs
+    ./logs-fivem.sh
+    tail -f /mnt/fivem-server/fivem.log
 
-2. **Storage not mounted**:
-   ```bash
-   mount -a                # Remount all filesystems
-   df -h                   # Check mounted filesystems
-   ```
+    # Check systemd service
+    sudo systemctl status fivem
+    sudo journalctl -u fivem -f
 
-3. **Permission issues**:
-   ```bash
-   sudo chown -R azureuser:azureuser /opt/fivem
-   sudo chown -R azureuser:azureuser /mnt/fivem-*
-   ```
+    # Try manual start
+    cd /opt/fivem
+    ./run.sh
+    ```
 
-4. **Network connectivity**:
-   ```bash
-   sudo ufw status         # Check firewall
-   netstat -tulpn | grep 30120  # Check if port is listening
-   ```
+2. **txData structure issues**:
+    ```bash
+    # Check symlinks
+    ls -la /opt/fivem/txData/qbox_core/
+
+    # Recreate symlinks if needed
+    cd /opt/fivem
+    mkdir -p txData/qbox_core
+    ln -sf /mnt/fivem-cache/qbox_core txData/qbox_core/cache
+    ln -sf /mnt/fivem-resources/qbox_core txData/qbox_core/resources
+    ```
+
+3. **Storage not mounted**:
+    ```bash
+    # Check mounted storage
+    df -h
+    mount | grep fivem
+    mount -a                # Remount all filesystems
+
+    # Restart VM if mounts fail
+    terraform apply -replace="azurerm_linux_virtual_machine.fivem"
+    ```
+
+4. **Permission issues**:
+    ```bash
+    sudo chown -R azureuser:azureuser /opt/fivem
+    sudo chown -R azureuser:azureuser /mnt/fivem-*
+    ```
+
+5. **Network connectivity**:
+    ```bash
+    sudo ufw status         # Check firewall
+    netstat -tulpn | grep 30120  # Check if port is listening
+    ```
+
+6. **SSH Connection Issues**:
+    ```bash
+    # Check your SSH key permissions
+    chmod 600 ~/.ssh/id_rsa
+
+    # Get connection command from Terraform
+    terraform output ssh_connection_command
+    ```
 
 ### Performance Tuning
 
@@ -263,13 +283,31 @@ For Azure infrastructure issues:
 - [Azure Support](https://azure.microsoft.com/support/)
 
 ## Cleanup
-
-To destroy all resources:
 ```bash
+# Remove all resources
 terraform destroy
 ```
 
-**Warning**: This will permanently delete the VM and all data. Make sure to backup any important data first.
+## Customization
+
+### Change auto-shutdown time:
+Edit `terraform.tfvars`:
+```
+auto_shutdown_time = "01:00"  # 1 AM UTC
+```
+
+### Increase storage:
+Edit `terraform.tfvars`:
+```
+fivem_resources_quota_gb = 50  # Increase resources storage
+fivem_cache_quota_gb = 20      # Increase cache storage
+```
+
+### Disable auto-shutdown:
+Edit `terraform.tfvars`:
+```
+enable_auto_shutdown = false
+```
 
 ## Variables Reference
 
@@ -290,3 +328,13 @@ terraform destroy
 | `fivem_cache_quota_gb` | Cache quota | 50 | No |
 | `fivem_download_url` | FiveM download URL | Latest build | No |
 | `tags` | Resource tags | Default tags | No |
+
+## Important Notes
+
+1. **Original run.sh**: Uses FiveM's original startup script
+2. **Symlink magic**: txData appears local to FiveM but actually uses Azure Storage
+3. **Performance**: Binaries run from local SSD for speed
+4. **Persistence**: All data survives VM recreations
+5. **Cost optimized**: Minimal local storage, maximal persistence
+
+This setup gives you the best of both worlds: **FiveM runs at full speed locally**, but your **data is safe and persistent in the cloud**! 🚀

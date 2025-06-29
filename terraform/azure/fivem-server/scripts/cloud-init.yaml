@@ -31,73 +31,57 @@ runcmd:
   - chown -R ${admin_username}:${admin_username} /mnt/fivem-server
   - chown -R ${admin_username}:${admin_username} /mnt/fivem-resources
   - chown -R ${admin_username}:${admin_username} /mnt/fivem-cache
-  
-  # Download and extract FiveM server
-  - cd /mnt/fivem-server
+
+  # Download and extract FiveM server to local directory (supports symlinks)
+  - mkdir -p /opt/fivem
+  - cd /opt/fivem
   - wget -O fx.tar.xz "${fivem_download_url}"
   - tar -xf fx.tar.xz
   - rm fx.tar.xz
-  - chown -R ${admin_username}:${admin_username} /mnt/fivem-server/*
+  - chown -R ${admin_username}:${admin_username} /opt/fivem
+
+  # Create symlinks so txData will point to Azure Storage
+  - mkdir -p /mnt/fivem-server/txData/qbox_core
+  - mkdir -p /mnt/fivem-resources/qbox_core
+  - mkdir -p /mnt/fivem-cache/qbox_core
   
-  # Create run script on local VM (only file stored locally)
+  # Create symlinks from FiveM directory to mounted storage
+  - ln -sf /mnt/fivem-cache/qbox_core /opt/fivem/txData/qbox_core/cache
+  - ln -sf /mnt/fivem-resources/qbox_core /opt/fivem/txData/qbox_core/resources
+  - chown -R ${admin_username}:${admin_username} /opt/fivem/txData
+  
+  # Create run script that leverages FiveM's original run.sh
   - |
-    cat > /home/${admin_username}/run.sh << 'EOF'
+    cat > /home/${admin_username}/start-fivem.sh << 'EOF'
     #!/bin/bash
+    echo "Starting FiveM server..."
+    cd /opt/fivem
     
-    # Change to FiveM directory on storage
-    cd /mnt/fivem-server
+    # Create txData directory structure if it doesn't exist
+    mkdir -p txData/qbox_core
     
-    # Set environment variables
-    export FIVEM_SERVER_DATA_DIR="/mnt/fivem-server"
-    export FIVEM_CACHE_DIR="/mnt/fivem-cache"
+    # Ensure symlinks exist for persistent storage
+    if [ ! -L "txData/qbox_core/cache" ]; then
+        ln -sf /mnt/fivem-cache/qbox_core txData/qbox_core/cache
+    fi
+    if [ ! -L "txData/qbox_core/resources" ]; then
+        ln -sf /mnt/fivem-resources/qbox_core txData/qbox_core/resources
+    fi
     
-    # Run FiveM server (run in background with nohup)
-    mkdir /mnt/fivem-server/logs
-    nohup ./run.sh > "/mnt/fivem-server/logs/output_$(date '+%Y%m%d_%H%M%S').log" 2>&1 &
-    
-    # Save PID for management
+    # Start FiveM using the original run.sh
+    echo "Starting FiveM with run.sh at $(date)" | tee /mnt/fivem-server/fivem.log
+    nohup ./run.sh > /mnt/fivem-server/fivem.log 2>&1 &
     echo $! > /mnt/fivem-server/fivem.pid
     
-    echo "FiveM server started in background. PID: $(cat /mnt/fivem-server/fivem.pid)"
-    echo "Logs: tail -f /mnt/fivem-server/fivem.log"
+    if [ -f /mnt/fivem-server/fivem.pid ]; then
+        echo "FiveM server started. PID: $(cat /mnt/fivem-server/fivem.pid)"
+        echo "Logs: tail -f /mnt/fivem-server/fivem.log"
+    else
+        echo "Failed to start FiveM server. Check logs: tail -f /mnt/fivem-server/fivem.log"
+    fi
     EOF
-  
-  # Make run script executable
-  - chmod +x /home/${admin_username}/run.sh
-  - chown ${admin_username}:${admin_username} /home/${admin_username}/run.sh
-  
-  # # Create run.sh script for the admin user home directory
-  # - |
-  #   cat > /home/${admin_username}/run.sh << 'RUNEOF'
-  #   #!/bin/bash
-  #   echo "FiveM Server starting at $(date)" > /mnt/fivem-server/fivem.log
-    
-  #   # Set working directory to FiveM installation
-  #   cd /mnt/fivem-server
-    
-  #   # Set LD_LIBRARY_PATH and run FiveM
-  #   export LD_LIBRARY_PATH=/mnt/fivem-server/
-  #   echo "Starting FiveM" | tee -a /mnt/fivem-server/fivem.log
-    
-  #   # Run FiveM server using the config from storage, save PID
-  #   nohup ./run.sh >> /mnt/fivem-server/fivem.log 2>&1 &
-  #   echo $! > /mnt/fivem-server/fivem.pid
-    
-  #   # Wait a moment to ensure the process started
-  #   sleep 2
-    
-  #   if kill -0 $! 2>/dev/null; then
-  #       echo "FiveM server started successfully. PID: $!" | tee -a /mnt/fivem-server/fivem.log
-  #   else
-  #       echo "Failed to start FiveM server" | tee -a /mnt/fivem-server/fivem.log
-  #       rm -f /mnt/fivem-server/fivem.pid
-  #       exit 1
-  #   fi
-  #   RUNEOF
-  #   chmod +x /home/${admin_username}/run.sh
-  #   chown ${admin_username}:${admin_username} /home/${admin_username}/run.sh
 
-  # Create systemd service for auto-start on boot
+  # Create systemd service that uses our start script
   - |
     cat > /etc/systemd/system/fivem.service << 'EOF'
     [Unit]
@@ -108,7 +92,7 @@ runcmd:
     Type=forking
     User=${admin_username}
     WorkingDirectory=/home/${admin_username}
-    ExecStart=/home/${admin_username}/run.sh
+    ExecStart=/home/${admin_username}/start-fivem.sh
     ExecStop=/bin/bash -c 'if [ -f /mnt/fivem-server/fivem.pid ]; then kill $(cat /mnt/fivem-server/fivem.pid); rm -f /mnt/fivem-server/fivem.pid; fi'
     Restart=always
     RestartSec=10
@@ -117,142 +101,159 @@ runcmd:
     WantedBy=multi-user.target
     EOF
   
-  # Reload systemd, enable and start service
-  - systemctl daemon-reload
-  - systemctl enable fivem
-  - systemctl start fivem
-  
-  # Create helper scripts for the admin user
-  - |
-    cat > /home/${admin_username}/start-fivem.sh << 'EOF'
-    #!/bin/bash
-    echo "Starting FiveM server via systemctl..."
-    sudo systemctl start fivem
-    sleep 2
-    if [ -f /mnt/fivem-server/fivem.pid ]; then
-        echo "FiveM server started. PID: $(cat /mnt/fivem-server/fivem.pid)"
-        echo "Logs: tail -f /mnt/fivem-server/fivem.log"
-    else
-        echo "Failed to start FiveM server. Check logs: tail -f /mnt/fivem-server/fivem.log"
-    fi
-    EOF
-    
-  - |
-    cat > /home/${admin_username}/start-fivem-direct.sh << 'EOF'
-    #!/bin/bash
-    echo "Starting FiveM server directly (not as service)..."
-    cd /mnt/fivem-server
-
-    # Run FiveM server using the config from storage
-    export LD_LIBRARY_PATH=/mnt/fivem-server/
-    echo "Starting FiveM"
-    ./run.sh
-    EOF
-  
+  # Create additional helper scripts
   - |
     cat > /home/${admin_username}/stop-fivem.sh << 'EOF'
     #!/bin/bash
     echo "Stopping FiveM server..."
-    sudo systemctl stop fivem
-    echo "FiveM server stopped."
+    if [ -f /mnt/fivem-server/fivem.pid ]; then
+        PID=$(cat /mnt/fivem-server/fivem.pid)
+        kill $PID
+        rm -f /mnt/fivem-server/fivem.pid
+        echo "FiveM server stopped."
+    else
+        echo "No FiveM server PID found."
+        sudo systemctl stop fivem
+    fi
     EOF
-  
+    
   - |
     cat > /home/${admin_username}/restart-fivem.sh << 'EOF'
     #!/bin/bash
     echo "Restarting FiveM server..."
-    sudo systemctl restart fivem
+    ./stop-fivem.sh
     sleep 2
-    if [ -f /mnt/fivem-server/fivem.pid ]; then
-        echo "FiveM server restarted. PID: $(cat /mnt/fivem-server/fivem.pid)"
-    else
-        echo "Failed to restart FiveM server. Check logs: tail -f /mnt/fivem-server/fivem.log"
-    fi
+    ./start-fivem.sh
     EOF
   
   - |
-    cat > /home/${admin_username}/fivem-logs.sh << 'EOF'
+    cat > /home/${admin_username}/logs-fivem.sh << 'EOF'
     #!/bin/bash
     echo "Showing FiveM server logs (press Ctrl+C to exit)..."
     tail -f /mnt/fivem-server/fivem.log
     EOF
+
+  - |
+    cat > /home/${admin_username}/status-fivem.sh << 'EOF'
+    #!/bin/bash
+    echo "=== FiveM Server Status ==="
+    if [ -f /mnt/fivem-server/fivem.pid ]; then
+        PID=$(cat /mnt/fivem-server/fivem.pid)
+        if ps -p $PID > /dev/null; then
+            echo "FiveM is RUNNING (PID: $PID)"
+        else
+            echo "FiveM is NOT RUNNING (stale PID file)"
+        fi
+    else
+        echo "FiveM is NOT RUNNING (no PID file)"
+    fi
+    
+    echo ""
+    echo "=== System Status ==="
+    sudo systemctl is-active fivem && echo "Systemd service: ACTIVE" || echo "Systemd service: INACTIVE"
+    
+    echo ""
+    echo "=== Storage Mounts ==="
+    df -h | grep fivem
+    
+    echo ""
+    echo "=== txData Structure ==="
+    ls -la /opt/fivem/txData/qbox_core/ 2>/dev/null || echo "txData not created yet"
+    EOF
   
-  # Make helper scripts executable
+  # Make all scripts executable
   - chmod +x /home/${admin_username}/*.sh
   - chown ${admin_username}:${admin_username} /home/${admin_username}/*.sh
   
-  # Create README file
+  # Reload systemd and enable service (but don't start yet - let user configure first)
+  - systemctl daemon-reload
+  - systemctl enable fivem
+  
+  # Create README with instructions
   - |
     cat > /home/${admin_username}/README.md << 'EOF'
-    # FiveM Server Setup
+    # FiveM Server Setup (Optimized Structure)
     
-    Your FiveM server has been automatically set up with minimal local storage.
+    Your FiveM server has been set up with the correct structure for txData persistence.
     
     ## File Structure
-    - Run script (only local file): `~/run.sh`
-    - FiveM binaries: `/mnt/fivem-server/` (Azure File Share)
-    - Resources: `/mnt/fivem-resources/` (Azure File Share)  
-    - Cache: `/mnt/fivem-cache/` (Azure File Share)
-    - Logs: `/mnt/fivem-server/fivem.log`
+    ```
+    Local VM (fast execution):
+    /opt/fivem/
+    ├── alpine/              # FiveM runtime
+    ├── run.sh              # Original FiveM startup script
+    └── txData/
+        └── qbox_core/
+            ├── cache/      -> /mnt/fivem-cache/qbox_core (symlink)
+            └── resources/  -> /mnt/fivem-resources/qbox_core (symlink)
     
-    ## Management Scripts
-    - `./start-fivem.sh` - Start the FiveM server via systemctl
-    - `./start-fivem-direct.sh` - Start FiveM server directly (manual)
-    - `./stop-fivem.sh` - Stop the FiveM server
-    - `./restart-fivem.sh` - Restart the FiveM server
-    - `./check-fivem.sh` - Check server status
-    - `./logs-fivem.sh` - View live server logs
+    Azure Storage (persistent):
+    /mnt/fivem-server/       # Logs and general data
+    /mnt/fivem-cache/        # Cache files (persisted)
+    /mnt/fivem-resources/    # Resources and maps (persisted)
+    ```
     
-    ## Quick Start Guide
-    1. Start server: `./start-fivem.sh`
-    2. Check logs: `./logs-fivem.sh`
-    3. Connect to: <server-ip>:30120
+    ## How it Works
+    1. FiveM binaries run from `/opt/fivem/` (local, fast)
+    2. When FiveM creates `txData/qbox_core/cache` and `txData/qbox_core/resources`, 
+       they actually point to Azure Storage via symlinks
+    3. Your data persists even if VM is recreated
     
-    ## Manual Operations
+    ## Management Commands
+    - `./start-fivem.sh` - Start FiveM server (uses original run.sh)
+    - `./stop-fivem.sh` - Stop FiveM server
+    - `./restart-fivem.sh` - Restart FiveM server
+    - `./logs-fivem.sh` - View live logs
+    - `./status-fivem.sh` - Check detailed status
+    
+    ## Systemd Service
     - Start: `sudo systemctl start fivem`
     - Stop: `sudo systemctl stop fivem`
     - Status: `sudo systemctl status fivem`
-    - Logs: `tail -f /mnt/fivem-server/fivem.log`
+    - Enable auto-start: `sudo systemctl enable fivem` (already enabled)
     
-    ## Server Setup
-    The server auto-starts on boot. You need to:
-    1. Configure your FiveM server as needed
-    2. All files are stored on Azure Storage for persistence
+    ## First Time Setup
+    1. Start the server: `./start-fivem.sh`
+    2. Check logs: `./logs-fivem.sh`
+    3. Check status: `./status-fivem.sh`
+    4. Connect via FiveM client to: <VM_IP>:30120
     
-    ## Server Access
-    - Connect via FiveM client to: <VM_PUBLIC_IP>:30120
-    - SSH access: ssh ${admin_username}@<VM_PUBLIC_IP>
+    ## Adding Resources
+    - Upload resources to `/mnt/fivem-resources/qbox_core/`
+    - They will appear in FiveM as `txData/qbox_core/resources/`
+    - Restart server: `./restart-fivem.sh`
+    
+    ## Logs and Debugging
+    - Server logs: `/mnt/fivem-server/fivem.log`
+    - System service: `sudo journalctl -u fivem -f`
     
     ## Cost Optimization
-    - Only run.sh is stored locally on VM
-    - All FiveM files stored on Azure Storage
-    - VM can be stopped when not in use to save costs
-    - Storage persists even when VM is deallocated
-    
+    - VM automatically shuts down at 2 AM UTC (configurable)
+    - All data persists on Azure Storage
+    - Only binaries stored locally for performance
     EOF
-  - chown ${admin_username}:${admin_username} /home/${admin_username}/README.md
 
 write_files:
   - path: /etc/motd
     content: |
       
       ╔══════════════════════════════════════════════════════════════════╗
-      ║                     FiveM Server VM (Minimal)                   ║
+      ║                    FiveM Server VM (Optimized)                  ║
       ║                                                                  ║
-      ║  Run script:   ~/run.sh (only local file)                       ║
-      ║  FiveM files:  /mnt/fivem-server/ (Azure Storage)               ║
-      ║  Resources:    /mnt/fivem-resources/ (Azure Storage)            ║
-      ║  Cache:        /mnt/fivem-cache/ (Azure Storage)                ║
-      ║  Logs:         /mnt/fivem-server/fivem.log                      ║
+      ║  Structure: alpine/ + run.sh locally, txData on Azure Storage   ║
+      ║  FiveM:     /opt/fivem/ (local for performance)                 ║
+      ║  Data:      /mnt/fivem-* (Azure Storage for persistence)        ║
+      ║  Logs:      /mnt/fivem-server/fivem.log                         ║
       ║                                                                  ║
-      ║  Auto-starts on boot. Manual control:                           ║
-      ║  Start:   ./start-fivem.sh                                       ║
-      ║  Logs:    ./fivem-logs.sh                                        ║
-      ║  Setup:   cat README.md                                          ║
+      ║  Quick Start:                                                    ║
+      ║  - Start:   ./start-fivem.sh                                     ║
+      ║  - Logs:    ./logs-fivem.sh                                      ║
+      ║  - Status:  ./status-fivem.sh                                    ║
+      ║  - Help:    cat README.md                                        ║
       ║                                                                  ║
       ╚══════════════════════════════════════════════════════════════════╝
       
     owner: root:root
     permissions: '0644'
 
-final_message: "FiveM server setup completed! Server auto-started. Check ~/README.md for details."
+final_message: "FiveM server setup completed! Use ./start-fivem.sh to start. Check README.md for details."
