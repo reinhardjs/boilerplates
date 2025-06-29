@@ -1,7 +1,7 @@
 # Basic Configuration
 project_name = "fivem-server"
 environment  = "dev"
-location     = "Indonesia Central"
+location     = "Southeast Asia"
 
 # VM Configuration
 admin_username = "azureuser"
