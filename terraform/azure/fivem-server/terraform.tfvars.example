@@ -16,8 +16,8 @@ storage_account_tier             = "Standard"
 storage_account_replication_type = "LRS"
 
 # FiveM Storage Quotas (in GB) - Minimal for cost optimization
-fivem_storage_quota_gb   = 20   # FiveM binaries and basic data
-fivem_resources_quota_gb = 30   # Custom resources (can increase later)
+fivem_storage_quota_gb   = 30   # FiveM binaries and basic data
+fivem_resources_quota_gb = 20   # Custom resources (can increase later)
 fivem_cache_quota_gb     = 10   # Cache files
 
 # OS Disk - Use Standard for cost savings
